@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 12
+          node-version: 18
           cache: 'npm'
           cache-dependency-path: telon-gateway-app/package-lock.json
 
@@ -77,6 +77,15 @@ jobs:
           else
             echo "Warning: NDK not found at $NDK_HOME"
           fi
+
+      - name: Clone Required Dependencies
+        run: |
+          cd $GITHUB_WORKSPACE/..
+          git clone https://github.com/telon-org/react-native-tele.git || echo "react-native-tele already exists"
+          git clone https://github.com/telon-org/react-native-sip2.git || echo "react-native-sip2 already exists"
+          git clone https://github.com/telon-org/react-native-replace-dialer.git || echo "react-native-replace-dialer already exists"
+          ls -la
+          echo "Dependencies cloned successfully"
 
       - name: Install Dependencies
         run: npm install
