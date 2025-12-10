@@ -201,4 +201,8 @@ task copyDownloadableDepsToLibs(type: Copy) {
     into 'libs'
 }
 
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+def nativeModulesGradleFile = file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
+if (nativeModulesGradleFile.exists()) {
+    apply from: nativeModulesGradleFile
+    applyNativeModulesAppBuildGradle(project)
+}
