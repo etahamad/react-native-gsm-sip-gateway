@@ -106,9 +106,41 @@ common-folder/
 ```
 
 ### Build and Installation
+
+#### Option 1: Using GitHub Actions (Recommended)
+
+1. **Trigger the Build**:
+   - Push changes to any branch, or
+   - Go to the **Actions** tab in GitHub and manually trigger the workflow using "Run workflow"
+
+2. **Download the APK**:
+   - After the workflow completes, go to the **Actions** tab
+   - Click on the latest workflow run
+   - Scroll down to the **Artifacts** section
+   - Download the `android-apk` artifact (it will be a ZIP file)
+   - Extract the ZIP file to get the `.apk` file
+
+3. **Install on Your Phone**:
+   - **Enable Unknown Sources**:
+     - Go to **Settings** > **Security** (or **Privacy** on newer Android versions)
+     - Enable **Install unknown apps** or **Unknown sources** for your file manager/browser
+   - **Transfer APK to Phone**:
+     - Option A: Email the APK to yourself and download it on your phone
+     - Option B: Use USB cable to transfer the APK file
+     - Option C: Use cloud storage (Google Drive, Dropbox, etc.)
+   - **Install**:
+     - Open the APK file on your phone using a file manager
+     - Tap "Install" when prompted
+     - Follow the installation wizard
+
+4. **Install Magisk Module**: Flash the `magisk/gateway.zip` module (if not already installed)
+
+#### Option 2: Build Locally
+
 1. **Install Magisk Module**: Flash the `magisk/gateway.zip` module
-2. **Build Application**: Use GitHub Actions or run `yarn android`
-3. **Install APK**: Install the generated APK on your device
+2. **Build Application**: Run `yarn android` in the `telon-gateway-app` directory
+3. **Install APK**: The APK will be generated in `telon-gateway-app/android/app/build/outputs/apk/release/`
+   - Transfer it to your phone and install as described above
 
 ---
 
