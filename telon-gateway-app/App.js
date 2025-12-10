@@ -11,13 +11,14 @@ import {
   StatusBar,
 } from 'react-native';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+// Colors definition (replacing deprecated NewAppScreen import)
+const Colors = {
+  lighter: '#F3F3F3',
+  light: '#DAE1E7',
+  dark: '#444444',
+  black: '#000000',
+  white: '#FFFFFF',
+};
 
 //import {ReplaceDialer} from 'react-native-replace-dialer';
 
