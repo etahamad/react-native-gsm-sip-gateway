@@ -11,6 +11,8 @@ module.exports = {
       {
         allowNamespaces: true,
         allowDeclareFields: true,
+        isTSX: false,
+        onlyRemoveTypeImports: true,
       },
     ],
   ],

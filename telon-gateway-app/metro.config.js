@@ -26,6 +26,9 @@ const config = {
     sourceExts: ['js', 'jsx', 'ts', 'tsx', 'json'],
     unstable_enablePackageExports: true,
   },
+  serializer: {
+    getModulesRunBeforeMainModule: () => [],
+  },
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);
