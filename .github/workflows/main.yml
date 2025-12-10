@@ -87,6 +87,20 @@ jobs:
           ls -la
           echo "Dependencies cloned successfully"
 
+      - name: Fix react-native-tele build.gradle namespace
+        run: |
+          TELE_BUILD_GRADLE="$GITHUB_WORKSPACE/../react-native-tele/android/app/build.gradle"
+          if [ -f "$TELE_BUILD_GRADLE" ]; then
+            if ! grep -q "namespace" "$TELE_BUILD_GRADLE"; then
+              sed -i '/^android {/a\    namespace "com.reactnativetele"' "$TELE_BUILD_GRADLE"
+              echo "Added namespace to react-native-tele build.gradle"
+            else
+              echo "Namespace already exists in react-native-tele build.gradle"
+            fi
+          else
+            echo "Warning: react-native-tele build.gradle not found"
+          fi
+
       - name: Install Dependencies
         run: npm install
         working-directory: telon-gateway-app
