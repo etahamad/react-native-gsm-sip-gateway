@@ -4,8 +4,19 @@ pluginManagement {
         google()
         mavenCentral()
     }
+    resolutionStrategy {
+        eachPlugin {
+            // If plugin is requested but already on classpath, use classpath version
+            if (requested.id.namespace == "com.android" && requested.id.name == "library") {
+                useModule("com.android.tools.build:gradle:8.9.2")
+            }
+            if (requested.id.namespace == "com.android" && requested.id.name == "application") {
+                useModule("com.android.tools.build:gradle:8.9.2")
+            }
+        }
+    }
     // Note: Android plugins are managed via buildscript classpath for 'apply plugin' syntax
-    // Plugin DSL modules (like React Native 0.80.0) will specify version directly
+    // Plugin DSL modules will resolve from repositories or use classpath version
 }
 
 includeBuild("../node_modules/@react-native/gradle-plugin")

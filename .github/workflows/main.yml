@@ -97,9 +97,20 @@ jobs:
           # This avoids conflict with classpath version
           RN_BUILD_GRADLE_KTS="node_modules/react-native/ReactAndroid/build.gradle.kts"
           if [ -f "$RN_BUILD_GRADLE_KTS" ]; then
-            # Remove version specification from plugin DSL to use classpath version
-            sed -i 's/id("com\.android\.library") version "[^"]*"/id("com.android.library")/' "$RN_BUILD_GRADLE_KTS"
-            echo "Patched React Native build.gradle.kts"
+            # Show the line we're trying to patch for debugging
+            echo "Checking React Native build.gradle.kts for plugin declaration..."
+            grep -n "com.android.library" "$RN_BUILD_GRADLE_KTS" || echo "Plugin declaration not found in expected format"
+            # Remove version specification from plugin DSL - handle various formats
+            # Format 1: id("com.android.library") version "8.9.2"
+            sed -i 's/id("com\.android\.library")\s*version\s*"[^"]*"/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
+            # Format 2: id("com.android.library") version = "8.9.2" (with equals)
+            sed -i 's/id("com\.android\.library")\s*version\s*=\s*"[^"]*"/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
+            # Format 3: id("com.android.library") version("8.9.2")
+            sed -i 's/id("com\.android\.library")\s*version("[^"]*")/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
+            echo "Patched React Native build.gradle.kts - removed version from plugin DSL"
+            # Verify the patch
+            echo "Verifying patch..."
+            grep -n "com.android.library" "$RN_BUILD_GRADLE_KTS" || echo "Plugin declaration not found after patch"
           fi
 
           # Patch react-native-sip2
