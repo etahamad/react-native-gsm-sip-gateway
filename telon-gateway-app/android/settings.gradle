@@ -4,10 +4,8 @@ pluginManagement {
         google()
         mavenCentral()
     }
-    plugins {
-        id("com.android.library") version "8.9.2" apply false
-        id("com.android.application") version "8.9.2" apply false
-    }
+    // Note: Android plugins are managed via buildscript classpath for 'apply plugin' syntax
+    // Plugin DSL modules (like React Native 0.80.0) will specify version directly
 }
 
 includeBuild("../node_modules/@react-native/gradle-plugin")
