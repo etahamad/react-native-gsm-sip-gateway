@@ -1,3 +1,14 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+        maven {
+            url = new File(settingsDir, "../node_modules/react-native/android")
+        }
+    }
+}
+
 dependencyResolutionManagement {
     versionCatalogs {
         libs {
