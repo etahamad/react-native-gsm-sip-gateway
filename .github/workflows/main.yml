@@ -91,6 +91,11 @@ jobs:
         run: npm install
         working-directory: telon-gateway-app
 
+      - name: Install build tools for codegen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+          
       - name: Patch build.gradle files
         run: |
           # Patch React Native's build.gradle.kts to remove version and artifact from plugin DSL
@@ -101,6 +106,13 @@ jobs:
             head -30 "$RN_BUILD_GRADLE_KTS" | grep -n "com.android" || echo "No android plugin found in first 30 lines"
             chmod +x ../scripts/patch_react_native_build.py
             python3 ../scripts/patch_react_native_build.py "$RN_BUILD_GRADLE_KTS"
+          fi
+          
+          # Make codegen build script executable
+          CODEGEN_BUILD_SCRIPT="node_modules/@react-native/codegen/scripts/oss/build.sh"
+          if [ -f "$CODEGEN_BUILD_SCRIPT" ]; then
+            chmod +x "$CODEGEN_BUILD_SCRIPT"
+            echo "Made codegen build script executable"
           fi
           
           # Patch react-native-sip2
