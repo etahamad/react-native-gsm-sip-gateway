@@ -8,9 +8,6 @@ buildscript {
         targetSdkVersion = 34
         ndkVersion = "26.1.10909125"
     }
-    android {
-        ndkVersion = "26.1.10909125"
-    }
     repositories {
         google()
         mavenCentral()
