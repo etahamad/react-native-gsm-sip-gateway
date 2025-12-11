@@ -4,6 +4,10 @@ pluginManagement {
         google()
         mavenCentral()
     }
+    plugins {
+        id("com.android.library") version "8.9.2" apply false
+        id("com.android.application") version "8.9.2" apply false
+    }
 }
 
 includeBuild("../node_modules/@react-native/gradle-plugin")
