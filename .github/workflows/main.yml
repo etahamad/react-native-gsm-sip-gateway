@@ -93,60 +93,43 @@ jobs:
 
       - name: Patch build.gradle files
         run: |
-           # Patch React Native's build.gradle.kts to remove version and artifact from plugin DSL
-           # This avoids conflict with classpath version
-           RN_BUILD_GRADLE_KTS="node_modules/react-native/ReactAndroid/build.gradle.kts"
-           if [ -f "$RN_BUILD_GRADLE_KTS" ]; then
-             # Show the line we're trying to patch for debugging
-             echo "Checking React Native build.gradle.kts for plugin declaration..."
-             grep -n -A 2 -B 2 "com.android.library" "$RN_BUILD_GRADLE_KTS" || echo "Plugin declaration not found in expected format"
-             # Remove version and artifact specification from plugin DSL
-             # Format: id("com.android.library") version "8.9.2" artifact "com.android.tools.build:gradle:8.9.2"
-             sed -i 's/id("com\.android\.library")\s*version\s*"[^"]*"\s*artifact\s*"[^"]*"/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
-             # Format: id("com.android.library") version "8.9.2" artifact = "com.android.tools.build:gradle:8.9.2"
-             sed -i 's/id("com\.android\.library")\s*version\s*"[^"]*"\s*artifact\s*=\s*"[^"]*"/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
-             # Format: id("com.android.library") version = "8.9.2" artifact = "com.android.tools.build:gradle:8.9.2"
-             sed -i 's/id("com\.android\.library")\s*version\s*=\s*"[^"]*"\s*artifact\s*=\s*"[^"]*"/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
-             # Also handle cases without artifact (fallback)
-             sed -i 's/id("com\.android\.library")\s*version\s*"[^"]*"/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
-             sed -i 's/id("com\.android\.library")\s*version\s*=\s*"[^"]*"/id("com.android.library")/g' "$RN_BUILD_GRADLE_KTS"
-             echo "Patched React Native build.gradle.kts - removed version and artifact from plugin DSL"
-             # Verify the patch
-             echo "Verifying patch..."
-             grep -n -A 2 -B 2 "com.android.library" "$RN_BUILD_GRADLE_KTS" || echo "Plugin declaration not found after patch"
-           fi
-           
-           # Patch react-native-sip2
-           SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
-           if [ -f "$SIP2_BUILD_GRADLE" ]; then
-             # Remove or update old buildscript dependencies that specify old Android Gradle Plugin versions
-             sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$SIP2_BUILD_GRADLE"
-             sed -i '/classpath.*gradle.*2\./d' "$SIP2_BUILD_GRADLE"
-             # Update android block
-             sed -i '/android\s*{/a\    namespace "one.telefon.sip2"' "$SIP2_BUILD_GRADLE"
-             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$SIP2_BUILD_GRADLE"
-             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$SIP2_BUILD_GRADLE"
-             sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$SIP2_BUILD_GRADLE"
-             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$SIP2_BUILD_GRADLE"
-             sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$SIP2_BUILD_GRADLE"
-             echo "Patched react-native-sip2 build.gradle"
-           fi
-           
-           # Patch react-native-tele
-           TELE_BUILD_GRADLE="node_modules/react-native-tele/android/app/build.gradle"
-           if [ -f "$TELE_BUILD_GRADLE" ]; then
-             # Remove or update old buildscript dependencies that specify old Android Gradle Plugin versions
-             sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$TELE_BUILD_GRADLE"
-             sed -i '/classpath.*gradle.*2\./d' "$TELE_BUILD_GRADLE"
-             # Update android block
-             sed -i '/android\s*{/a\    namespace "one.telefon.tele"' "$TELE_BUILD_GRADLE"
-             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$TELE_BUILD_GRADLE"
-             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$TELE_BUILD_GRADLE"
-             sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$TELE_BUILD_GRADLE"
-             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$TELE_BUILD_GRADLE"
-             sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$TELE_BUILD_GRADLE"
-             echo "Patched react-native-tele build.gradle"
-           fi
+          # Patch React Native's build.gradle.kts to remove version and artifact from plugin DSL
+          # This avoids conflict with classpath version
+          RN_BUILD_GRADLE_KTS="node_modules/react-native/ReactAndroid/build.gradle.kts"
+          if [ -f "$RN_BUILD_GRADLE_KTS" ]; then
+            echo "Checking React Native build.gradle.kts for plugin declaration..."
+            head -30 "$RN_BUILD_GRADLE_KTS" | grep -n "com.android" || echo "No android plugin found in first 30 lines"
+            chmod +x ../scripts/patch_react_native_build.py
+            python3 ../scripts/patch_react_native_build.py "$RN_BUILD_GRADLE_KTS"
+          fi
+          
+          # Patch react-native-sip2
+          SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
+          if [ -f "$SIP2_BUILD_GRADLE" ]; then
+            sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$SIP2_BUILD_GRADLE"
+            sed -i '/classpath.*gradle.*2\./d' "$SIP2_BUILD_GRADLE"
+            sed -i '/android\s*{/a\    namespace "one.telefon.sip2"' "$SIP2_BUILD_GRADLE"
+            sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$SIP2_BUILD_GRADLE"
+            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$SIP2_BUILD_GRADLE"
+            echo "Patched react-native-sip2 build.gradle"
+          fi
+          
+          # Patch react-native-tele
+          TELE_BUILD_GRADLE="node_modules/react-native-tele/android/app/build.gradle"
+          if [ -f "$TELE_BUILD_GRADLE" ]; then
+            sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$TELE_BUILD_GRADLE"
+            sed -i '/classpath.*gradle.*2\./d' "$TELE_BUILD_GRADLE"
+            sed -i '/android\s*{/a\    namespace "one.telefon.tele"' "$TELE_BUILD_GRADLE"
+            sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$TELE_BUILD_GRADLE"
+            sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$TELE_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$TELE_BUILD_GRADLE"
+            sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$TELE_BUILD_GRADLE"
+            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$TELE_BUILD_GRADLE"
+            echo "Patched react-native-tele build.gradle"
+          fi
         working-directory: telon-gateway-app
 
       - name: Clean AndroidManifest.xml files
