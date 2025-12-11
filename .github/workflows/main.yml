@@ -63,7 +63,6 @@ jobs:
           fi
           echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
-          echo "ndk.dir=$NDK_PATH" > telon-gateway-app/android/local.properties
           echo "NDK found at: $NDK_PATH"
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
@@ -91,26 +90,47 @@ jobs:
         run: npm install
         working-directory: telon-gateway-app
 
-      - name: Fix native module build.gradle namespaces
+      - name: Patch build.gradle files
         run: |
-          # Fix react-native-tele
-          TELE_BUILD_GRADLE="node_modules/react-native-tele/android/app/build.gradle"
-          if [ -f "$TELE_BUILD_GRADLE" ]; then
-            if ! grep -q "namespace" "$TELE_BUILD_GRADLE"; then
-              sed -i '/android\s*{/a\    namespace "com.reactnativetele"' "$TELE_BUILD_GRADLE" || \
-              sed -i 's/android {/android {\n    namespace "com.reactnativetele"/' "$TELE_BUILD_GRADLE"
-              echo "Added namespace to react-native-tele build.gradle"
-            fi
-          fi
-          
-          # Fix react-native-sip2 if it exists
+          # Patch react-native-sip2
           SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
           if [ -f "$SIP2_BUILD_GRADLE" ]; then
-            if ! grep -q "namespace" "$SIP2_BUILD_GRADLE"; then
-              sed -i '/android\s*{/a\    namespace "com.reactnativesip2"' "$SIP2_BUILD_GRADLE" || \
-              sed -i 's/android {/android {\n    namespace "com.reactnativesip2"/' "$SIP2_BUILD_GRADLE"
-              echo "Added namespace to react-native-sip2 build.gradle"
-            fi
+            sed -i '/android\s*{/a\    namespace "one.telefon.sip2"\n    ndkVersion "26.1.10909125"' "$SIP2_BUILD_GRADLE"
+            sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$SIP2_BUILD_GRADLE"
+            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native:ReactAndroid')|" "$SIP2_BUILD_GRADLE"
+            echo "Patched react-native-sip2 build.gradle"
+          fi
+
+          # Patch react-native-tele
+          TELE_BUILD_GRADLE="node_modules/react-native-tele/android/app/build.gradle"
+          if [ -f "$TELE_BUILD_GRADLE" ]; then
+            sed -i '/android\s*{/a\    namespace "one.telefon.tele"\n    ndkVersion "26.1.10909125"' "$TELE_BUILD_GRADLE"
+            sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$TELE_BUILD_GRADLE"
+            sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$TELE_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$TELE_BUILD_GRADLE"
+            sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$TELE_BUILD_GRADLE"
+            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native:ReactAndroid')|" "$TELE_BUILD_GRADLE"
+            echo "Patched react-native-tele build.gradle"
+          fi
+        working-directory: telon-gateway-app
+
+      - name: Clean AndroidManifest.xml files
+        run: |
+          # Clean react-native-sip2 AndroidManifest.xml
+          SIP2_MANIFEST="node_modules/react-native-sip2/android/src/main/AndroidManifest.xml"
+          if [ -f "$SIP2_MANIFEST" ]; then
+            sed -i 's/package="one.telefon.sip2"//' "$SIP2_MANIFEST"
+            echo "Cleaned react-native-sip2 AndroidManifest.xml"
+          fi
+
+          # Clean react-native-tele AndroidManifest.xml
+          TELE_MANIFEST="node_modules/react-native-tele/android/app/src/main/AndroidManifest.xml"
+          if [ -f "$TELE_MANIFEST" ]; then
+            sed -i 's/package="one.telefon.tele"//' "$TELE_MANIFEST"
+            echo "Cleaned react-native-tele AndroidManifest.xml"
           fi
         working-directory: telon-gateway-app
 

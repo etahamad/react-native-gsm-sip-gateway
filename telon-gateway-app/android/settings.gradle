@@ -1,6 +1,21 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    versionCatalogs {
+        libs {
+            from(files("../node_modules/react-native/gradle/libs.versions.toml"))
+        }
+    }
+}
 rootProject.name = 'teleexample'
 include ':react-native-sip2'
-project(':react-native-sip2').projectDir = new File(rootProject.projectDir, '../../../modules/react-native-sip2/android')
+project(':react-native-sip2').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-sip2/android')
 include ':react-native-tele'
 project(':react-native-tele').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-tele/android/app')
 
@@ -11,3 +26,5 @@ if (nativeModulesGradleFile.exists()) {
 }
 
 include ':app'
+include ':react-native'
+project(':react-native').projectDir = new File(rootProject.projectDir, '../node_modules/react-native')
