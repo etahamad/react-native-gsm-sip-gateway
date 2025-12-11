@@ -96,6 +96,10 @@ jobs:
           # Patch react-native-sip2
           SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
           if [ -f "$SIP2_BUILD_GRADLE" ]; then
+            # Remove or update old buildscript dependencies that specify old Android Gradle Plugin versions
+            sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$SIP2_BUILD_GRADLE"
+            sed -i '/classpath.*gradle.*2\./d' "$SIP2_BUILD_GRADLE"
+            # Update android block
             sed -i '/android\s*{/a\    namespace "one.telefon.sip2"' "$SIP2_BUILD_GRADLE"
             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$SIP2_BUILD_GRADLE"
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$SIP2_BUILD_GRADLE"
@@ -108,6 +112,10 @@ jobs:
           # Patch react-native-tele
           TELE_BUILD_GRADLE="node_modules/react-native-tele/android/app/build.gradle"
           if [ -f "$TELE_BUILD_GRADLE" ]; then
+            # Remove or update old buildscript dependencies that specify old Android Gradle Plugin versions
+            sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$TELE_BUILD_GRADLE"
+            sed -i '/classpath.*gradle.*2\./d' "$TELE_BUILD_GRADLE"
+            # Update android block
             sed -i '/android\s*{/a\    namespace "one.telefon.tele"' "$TELE_BUILD_GRADLE"
             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$TELE_BUILD_GRADLE"
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$TELE_BUILD_GRADLE"
