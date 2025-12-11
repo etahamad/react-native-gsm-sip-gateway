@@ -234,7 +234,7 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew clean
-          ./gradlew assembleRelease --debug --stacktrace
+          ./gradlew assembleRelease
         working-directory: telon-gateway-app
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
