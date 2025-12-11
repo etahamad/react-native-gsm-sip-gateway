@@ -4,7 +4,7 @@ pluginManagement {
         google()
         mavenCentral()
         maven {
-            url = new File(settingsDir, "../node_modules/react-native/android")
+            url = new File(settingsDir, "../node_modules/react-native/gradle")
         }
     }
 }

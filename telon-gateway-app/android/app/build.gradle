@@ -186,6 +186,12 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(':react-native')
 
+    // Add peer dependencies for React Native
+    compileOnly("androidx.appcompat:appcompat:1.6.1")
+    compileOnly("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    compileOnly("com.facebook.fbjni:fbjni:0.6.0")
+    compileOnly("com.squareup.okhttp3:okhttp:4.12.0")
+
     if (enableHermes) {
         def hermesPath = "../../node_modules/hermes-engine/android/";
         debugImplementation files(hermesPath + "hermes-debug.aar")
