@@ -177,7 +177,8 @@ jobs:
             sed -i '/android\s*{/a\    namespace "one.telefon.sip2"' "$SIP2_BUILD_GRADLE"
             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$SIP2_BUILD_GRADLE"
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$SIP2_BUILD_GRADLE"
-            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 24/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 21/minSdkVersion 24/' "$SIP2_BUILD_GRADLE"
             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$SIP2_BUILD_GRADLE"
             sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$SIP2_BUILD_GRADLE"
             echo "Patched react-native-sip2 build.gradle"
@@ -191,7 +192,8 @@ jobs:
             sed -i '/android\s*{/a\    namespace "one.telefon.tele"' "$TELE_BUILD_GRADLE"
             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$TELE_BUILD_GRADLE"
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$TELE_BUILD_GRADLE"
-            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$TELE_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 24/' "$TELE_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 21/minSdkVersion 24/' "$TELE_BUILD_GRADLE"
             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$TELE_BUILD_GRADLE"
             sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$TELE_BUILD_GRADLE"
             echo "Patched react-native-tele build.gradle"
@@ -204,6 +206,9 @@ jobs:
           SIP2_MANIFEST="node_modules/react-native-sip2/android/src/main/AndroidManifest.xml"
           if [ -f "$SIP2_MANIFEST" ]; then
             sed -i 's/package="one.telefon.sip2"//' "$SIP2_MANIFEST"
+            # Update minSdkVersion in uses-sdk if present (React Native 0.80 requires 24)
+            sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="24"/g' "$SIP2_MANIFEST"
+            sed -i 's/android:minSdkVersion="21"/android:minSdkVersion="24"/g' "$SIP2_MANIFEST"
             echo "Cleaned react-native-sip2 AndroidManifest.xml"
           fi
 
@@ -211,6 +216,9 @@ jobs:
           TELE_MANIFEST="node_modules/react-native-tele/android/app/src/main/AndroidManifest.xml"
           if [ -f "$TELE_MANIFEST" ]; then
             sed -i 's/package="one.telefon.tele"//' "$TELE_MANIFEST"
+            # Update minSdkVersion in uses-sdk if present (React Native 0.80 requires 24)
+            sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="24"/g' "$TELE_MANIFEST"
+            sed -i 's/android:minSdkVersion="21"/android:minSdkVersion="24"/g' "$TELE_MANIFEST"
             echo "Cleaned react-native-tele AndroidManifest.xml"
           fi
         working-directory: telon-gateway-app
