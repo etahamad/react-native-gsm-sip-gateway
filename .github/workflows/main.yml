@@ -101,6 +101,7 @@ jobs:
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$SIP2_BUILD_GRADLE"
             sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$SIP2_BUILD_GRADLE"
             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$SIP2_BUILD_GRADLE"
+            sed -i "s/implementation 'com.facebook.react:react-native:+'/implementation 'com.facebook.react:react-native:0.80.0'/" "$SIP2_BUILD_GRADLE"
             echo "Patched react-native-sip2 build.gradle"
           fi
 
@@ -112,7 +113,25 @@ jobs:
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$TELE_BUILD_GRADLE"
             sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$TELE_BUILD_GRADLE"
             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$TELE_BUILD_GRADLE"
+            sed -i "s/implementation 'com.facebook.react:react-native:+'/implementation 'com.facebook.react:react-native:0.80.0'/" "$TELE_BUILD_GRADLE"
             echo "Patched react-native-tele build.gradle"
+          fi
+        working-directory: telon-gateway-app
+
+      - name: Clean AndroidManifest.xml files
+        run: |
+          # Clean react-native-sip2 AndroidManifest.xml
+          SIP2_MANIFEST="node_modules/react-native-sip2/android/src/main/AndroidManifest.xml"
+          if [ -f "$SIP2_MANIFEST" ]; then
+            sed -i 's/package="one.telefon.sip2"//' "$SIP2_MANIFEST"
+            echo "Cleaned react-native-sip2 AndroidManifest.xml"
+          fi
+
+          # Clean react-native-tele AndroidManifest.xml
+          TELE_MANIFEST="node_modules/react-native-tele/android/app/src/main/AndroidManifest.xml"
+          if [ -f "$TELE_MANIFEST" ]; then
+            sed -i 's/package="one.telefon.tele"//' "$TELE_MANIFEST"
+            echo "Cleaned react-native-tele AndroidManifest.xml"
           fi
         working-directory: telon-gateway-app
 
