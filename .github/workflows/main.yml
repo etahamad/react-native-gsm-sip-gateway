@@ -109,10 +109,32 @@ jobs:
           fi
           
           # Make codegen build script executable
-          CODEGEN_BUILD_SCRIPT="node_modules/@react-native/codegen/scripts/oss/build.sh"
-          if [ -f "$CODEGEN_BUILD_SCRIPT" ]; then
-            chmod +x "$CODEGEN_BUILD_SCRIPT"
-            echo "Made codegen build script executable"
+          # Find the script from the project root (working directory is telon-gateway-app)
+          echo "Searching for codegen build script..."
+          CODEGEN_SCRIPT=$(find node_modules -name "build.sh" -path "*/@react-native/codegen/scripts/oss/*" -type f 2>/dev/null | head -1)
+          if [ -n "$CODEGEN_SCRIPT" ] && [ -f "$CODEGEN_SCRIPT" ]; then
+            chmod +x "$CODEGEN_SCRIPT"
+            echo "Made codegen build script executable: $CODEGEN_SCRIPT"
+            # Verify it's executable
+            ls -la "$CODEGEN_SCRIPT"
+            # Check shebang
+            head -1 "$CODEGEN_SCRIPT"
+          else
+            echo "Warning: Codegen build script not found. Listing codegen directory structure..."
+            if [ -d "node_modules/@react-native/codegen" ]; then
+              find node_modules/@react-native/codegen -type f -name "*.sh" 2>/dev/null | head -10
+            fi
+          fi
+          
+          # Also make scripts executable in ReactAndroid directory where Gradle runs from
+          if [ -d "node_modules/react-native/ReactAndroid" ]; then
+            cd node_modules/react-native/ReactAndroid
+            # Try to find and make codegen script executable relative to this directory
+            if [ -f "../../@react-native/codegen/scripts/oss/build.sh" ]; then
+              chmod +x "../../@react-native/codegen/scripts/oss/build.sh"
+              echo "Made codegen script executable from ReactAndroid directory"
+            fi
+            cd ../../..
           fi
           
           # Patch react-native-sip2
