@@ -4,22 +4,7 @@ pluginManagement {
         google()
         mavenCentral()
     }
-    resolutionStrategy {
-        eachPlugin {
-            // If plugin is requested but already on classpath, use classpath version
-            if (requested.id.namespace == "com.android" && requested.id.name == "library") {
-                useModule("com.android.tools.build:gradle:8.9.2")
-            }
-            if (requested.id.namespace == "com.android" && requested.id.name == "application") {
-                useModule("com.android.tools.build:gradle:8.9.2")
-            }
-        }
-    }
-    // Note: Android plugins are managed via buildscript classpath for 'apply plugin' syntax
-    // Plugin DSL modules will resolve from repositories or use classpath version
 }
-
-includeBuild("../node_modules/@react-native/gradle-plugin")
 
 dependencyResolutionManagement {
     versionCatalogs {
@@ -41,21 +26,5 @@ if (nativeModulesGradleFile.exists()) {
 }
 
 include ':app'
-
-// React Native 0.80.0's build.gradle.kts expects the project structure: packages:react-native:ReactAndroid:hermes-engine
-// We need to create this structure to match what React Native's build files expect
-// Point all to the actual React Native directories
-include ':packages:react-native:ReactAndroid'
-project(':packages:react-native:ReactAndroid').projectDir = new File(rootProject.projectDir, '../node_modules/react-native/ReactAndroid')
-
-// Also include as :react-native for backward compatibility with other modules
 include ':react-native'
-project(':react-native').projectDir = new File(rootProject.projectDir, '../node_modules/react-native/ReactAndroid')
-
-// Include hermes-engine subproject - React Native's build.gradle.kts requires it
-// Even if Hermes is disabled, the project structure must exist
-def hermesEngineDir = new File(rootProject.projectDir, '../node_modules/react-native/ReactAndroid/hermes-engine')
-if (hermesEngineDir.exists()) {
-    include ':packages:react-native:ReactAndroid:hermes-engine'
-    project(':packages:react-native:ReactAndroid:hermes-engine').projectDir = hermesEngineDir
-}
+project(':react-native').projectDir = new File(rootProject.projectDir, '../node_modules/react-native')

@@ -3,9 +3,12 @@
 buildscript {
     ext {
         buildToolsVersion = "34.0.0"
-        minSdkVersion = 24  // React Native 0.80+ requires minSdkVersion 24
+        minSdkVersion = 21
         compileSdkVersion = 34
         targetSdkVersion = 34
+        ndkVersion = "26.1.10909125"
+    }
+    android {
         ndkVersion = "26.1.10909125"
     }
     repositories {
@@ -13,9 +16,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Android Gradle Plugin - needed for modules using 'apply plugin' syntax
-        // Plugin DSL modules will use version from pluginManagement in settings.gradle
-        classpath("com.android.tools.build:gradle:8.9.2")
+        classpath("com.android.tools.build:gradle:8.4.0")
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -33,94 +34,5 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
-    }
-}
-
-// Fix for React Native 0.80+ codegen task dependency issues
-// Gradle detects that :packages:react-native:ReactAndroid tasks use outputs of :react-native tasks
-// but there's no explicit dependency declared. This configuration ensures the dependencies are properly declared.
-gradle.projectsEvaluated {
-    // Fix for buildCodegenCLI task dependency
-    def reactNativeBuildCodegenCLI = project(':react-native').tasks.findByName('buildCodegenCLI')
-    def reactAndroidBuildCodegenCLI = project(':packages:react-native:ReactAndroid').tasks.findByName('buildCodegenCLI')
-    
-    if (reactNativeBuildCodegenCLI != null && reactAndroidBuildCodegenCLI != null) {
-        reactAndroidBuildCodegenCLI.dependsOn(reactNativeBuildCodegenCLI)
-        println("Configured :packages:react-native:ReactAndroid:buildCodegenCLI to depend on :react-native:buildCodegenCLI")
-    }
-    
-    // Fix for generateCodegenArtifactsFromSchema task dependency
-    def reactNativeGenerateSchema = project(':react-native').tasks.findByName('generateCodegenSchemaFromJavaScript')
-    def reactAndroidGenerateArtifacts = project(':packages:react-native:ReactAndroid').tasks.findByName('generateCodegenArtifactsFromSchema')
-    
-    if (reactNativeGenerateSchema != null && reactAndroidGenerateArtifacts != null) {
-        reactAndroidGenerateArtifacts.dependsOn(reactNativeGenerateSchema)
-        println("Configured :packages:react-native:ReactAndroid:generateCodegenArtifactsFromSchema to depend on :react-native:generateCodegenSchemaFromJavaScript")
-    }
-    
-    // Fix for prepareBoost task dependency
-    def reactNativeDownloadBoost = project(':react-native').tasks.findByName('downloadBoost')
-    def reactAndroidPrepareBoost = project(':packages:react-native:ReactAndroid').tasks.findByName('prepareBoost')
-    
-    if (reactNativeDownloadBoost != null && reactAndroidPrepareBoost != null) {
-        reactAndroidPrepareBoost.dependsOn(reactNativeDownloadBoost)
-        println("Configured :packages:react-native:ReactAndroid:prepareBoost to depend on :react-native:downloadBoost")
-    }
-    
-    // Fix for prepareDoubleConversion task dependency
-    def reactNativeDownloadDoubleConversion = project(':react-native').tasks.findByName('downloadDoubleConversion')
-    def reactAndroidPrepareDoubleConversion = project(':packages:react-native:ReactAndroid').tasks.findByName('prepareDoubleConversion')
-    
-    if (reactNativeDownloadDoubleConversion != null && reactAndroidPrepareDoubleConversion != null) {
-        reactAndroidPrepareDoubleConversion.dependsOn(reactNativeDownloadDoubleConversion)
-        println("Configured :packages:react-native:ReactAndroid:prepareDoubleConversion to depend on :react-native:downloadDoubleConversion")
-    }
-    
-    // Fix for extractDeepLinksForAarRelease task dependency
-    def reactNativeGenerateResValues = project(':react-native').tasks.findByName('generateReleaseResValues')
-    def reactAndroidExtractDeepLinks = project(':packages:react-native:ReactAndroid').tasks.findByName('extractDeepLinksForAarRelease')
-    
-    if (reactNativeGenerateResValues != null && reactAndroidExtractDeepLinks != null) {
-        reactAndroidExtractDeepLinks.dependsOn(reactNativeGenerateResValues)
-        println("Configured :packages:react-native:ReactAndroid:extractDeepLinksForAarRelease to depend on :react-native:generateReleaseResValues")
-    }
-    
-    // Fix for packageReleaseResources task dependency
-    def reactAndroidPackageResources = project(':packages:react-native:ReactAndroid').tasks.findByName('packageReleaseResources')
-    
-    if (reactNativeGenerateResValues != null && reactAndroidPackageResources != null) {
-        reactAndroidPackageResources.dependsOn(reactNativeGenerateResValues)
-        println("Configured :packages:react-native:ReactAndroid:packageReleaseResources to depend on :react-native:generateReleaseResValues")
-    }
-    
-    // Generic fix: Automatically handle all download/prepare task pairs and resource-related tasks
-    // This prevents similar issues with other dependencies (glog, gtest, etc.)
-    def reactNativeProject = project(':react-native')
-    def reactAndroidProject = project(':packages:react-native:ReactAndroid')
-    
-    reactAndroidProject.tasks.all { task ->
-        if (task.name.startsWith('prepare')) {
-            // Try to find corresponding download task in :react-native
-            def downloadTaskName = 'download' + task.name.substring(7) // Remove 'prepare' prefix
-            def downloadTask = reactNativeProject.tasks.findByName(downloadTaskName)
-            
-            if (downloadTask != null && !task.dependsOn.contains(downloadTask)) {
-                task.dependsOn(downloadTask)
-                println("Auto-configured :packages:react-native:ReactAndroid:${task.name} to depend on :react-native:${downloadTaskName}")
-            }
-        }
-        
-        // Handle all tasks that might depend on generateReleaseResValues
-        // This includes extractDeepLinks, packageResources, mergeResources, etc.
-        if (reactNativeGenerateResValues != null && 
-            (task.name.contains('extractDeepLinks') || 
-             task.name.contains('packageResources') || 
-             task.name.contains('mergeResources') ||
-             task.name.contains('processResources')) &&
-            task.name.contains('Release') &&
-            !task.dependsOn.contains(reactNativeGenerateResValues)) {
-            task.dependsOn(reactNativeGenerateResValues)
-            println("Auto-configured :packages:react-native:ReactAndroid:${task.name} to depend on :react-native:generateReleaseResValues")
-        }
     }
 }

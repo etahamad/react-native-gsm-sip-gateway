@@ -1,6 +1,4 @@
-plugins {
-    id("com.android.application")
-}
+apply plugin: "com.android.application"
 
 import com.android.build.OutputFile
 
@@ -186,14 +184,13 @@ dependencies {
     implementation project(':react-native-sip2')
     implementation project(':react-native-tele')
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation project(':react-native')
+    implementation project(':react-native:ReactAndroid')
 
     // Add peer dependencies for React Native
     compileOnly("androidx.appcompat:appcompat:1.6.1")
     compileOnly("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     compileOnly("com.facebook.fbjni:fbjni:0.6.0")
-    // Use React Native's okhttp version (4.9.2) to avoid version conflicts
-    compileOnly("com.squareup.okhttp3:okhttp:4.9.2")
+    compileOnly("com.squareup.okhttp3:okhttp:4.12.0")
 
     if (enableHermes) {
         def hermesPath = "../../node_modules/hermes-engine/android/";

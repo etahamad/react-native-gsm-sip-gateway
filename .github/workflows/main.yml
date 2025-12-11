@@ -63,7 +63,6 @@ jobs:
           fi
           echo "NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$NDK_PATH" >> $GITHUB_ENV
-          echo "ndk.dir=$NDK_PATH" > telon-gateway-app/android/local.properties
           echo "NDK found at: $NDK_PATH"
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
@@ -91,111 +90,29 @@ jobs:
         run: npm install
         working-directory: telon-gateway-app
 
-      - name: Install build tools for codegen
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
-          
       - name: Patch build.gradle files
         run: |
-          # Patch React Native's build.gradle.kts to remove version and artifact from plugin DSL
-          # This avoids conflict with classpath version
-          RN_BUILD_GRADLE_KTS="node_modules/react-native/ReactAndroid/build.gradle.kts"
-          if [ -f "$RN_BUILD_GRADLE_KTS" ]; then
-            echo "Checking React Native build.gradle.kts for plugin declaration..."
-            head -30 "$RN_BUILD_GRADLE_KTS" | grep -n "com.android" || echo "No android plugin found in first 30 lines"
-            chmod +x ../scripts/patch_react_native_build.py
-            python3 ../scripts/patch_react_native_build.py "$RN_BUILD_GRADLE_KTS"
-          fi
-          
-          # Setup codegen build script
-          # In React Native 0.80+, the buildCodegenCLI task expects a build.sh script at:
-          # android/node_modules/@react-native/codegen/scripts/oss/build.sh
-          # This script builds the native codegen CLI binary. However, in some React Native versions,
-          # this script may not be included in the @react-native/codegen package, or codegen may
-          # be optional if you're not using the New Architecture or TurboModules.
-          #
-          # Reference: https://github.com/facebook/react-native/blob/main/packages/react-native/ReactAndroid/build.gradle.kts
-          
-          echo "=== Setting up codegen build script ==="
-          echo "Checking for @react-native/codegen package..."
-          
-          # Check if codegen package exists
-          if [ ! -d "node_modules/@react-native/codegen" ]; then
-            echo "Warning: @react-native/codegen package not found in node_modules"
-            echo "This is normal if codegen is not explicitly installed as a dependency"
-          else
-            echo "Found @react-native/codegen package"
-            echo "Listing codegen directory structure:"
-            ls -la node_modules/@react-native/codegen/ 2>/dev/null || echo "Cannot list codegen directory"
-          fi
-          
-          # Search for the actual build.sh script in node_modules
-          echo "Searching for build.sh script in node_modules..."
-          ACTUAL_SCRIPT=$(find node_modules -name "build.sh" -path "*/@react-native/codegen/scripts/oss/*" -type f 2>/dev/null | head -1)
-          
-          # Create the complete directory structure where Gradle expects codegen output
-          # This directory is used by both :react-native:buildCodegenCLI and 
-          # :packages:react-native:ReactAndroid:buildCodegenCLI tasks
-          # Creating it beforehand helps avoid Gradle implicit dependency warnings
-          mkdir -p android/node_modules/@react-native/codegen/scripts/oss
-          mkdir -p android/node_modules/@react-native/codegen/lib
-          
-          if [ -n "$ACTUAL_SCRIPT" ] && [ -f "$ACTUAL_SCRIPT" ]; then
-            echo "Found codegen build script at: $ACTUAL_SCRIPT"
-            chmod +x "$ACTUAL_SCRIPT"
-            cp "$ACTUAL_SCRIPT" android/node_modules/@react-native/codegen/scripts/oss/build.sh
-            chmod +x android/node_modules/@react-native/codegen/scripts/oss/build.sh
-            echo "Copied codegen script to expected location"
-            ls -la android/node_modules/@react-native/codegen/scripts/oss/build.sh
-          else
-            echo "Codegen build.sh script not found in node_modules"
-            echo "This may be normal - React Native 0.80+ may handle codegen differently"
-            echo "Creating minimal stub script to satisfy Gradle's buildCodegenCLI task..."
-            echo "Note: If you're not using TurboModules or the New Architecture, codegen may not be needed"
-            
-            # Create a stub script that exits successfully
-            # This allows the build to proceed even if codegen CLI isn't built
-            printf '#!/bin/bash\n# Stub script for React Native codegen build\n# This script is created because the actual build.sh may not be present in\n# @react-native/codegen package in React Native 0.80+\n# \n# If you'\''re using TurboModules or the New Architecture, you may need to:\n# 1. Ensure @react-native/codegen is properly installed\n# 2. Build the codegen CLI manually if needed\n# 3. Or configure your project to skip codegen if not needed\n#\n# For now, this stub allows the build to proceed\necho "Codegen build script stub - buildCodegenCLI task will complete without building native CLI"\nexit 0\n' > android/node_modules/@react-native/codegen/scripts/oss/build.sh
-            chmod +x android/node_modules/@react-native/codegen/scripts/oss/build.sh
-            echo "Created stub codegen script at: android/node_modules/@react-native/codegen/scripts/oss/build.sh"
-            ls -la android/node_modules/@react-native/codegen/scripts/oss/build.sh
-          fi
-          
-          # Create a marker file to indicate the directory structure is ready
-          # This helps Gradle understand the directory exists before tasks run
-          touch android/node_modules/@react-native/codegen/.gradle-ready
-          
-          echo "=== Codegen setup complete ==="
-          echo "Codegen directory structure created at: android/node_modules/@react-native/codegen"
-          
           # Patch react-native-sip2
           SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
           if [ -f "$SIP2_BUILD_GRADLE" ]; then
-            sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$SIP2_BUILD_GRADLE"
-            sed -i '/classpath.*gradle.*2\./d' "$SIP2_BUILD_GRADLE"
-            sed -i '/android\s*{/a\    namespace "one.telefon.sip2"' "$SIP2_BUILD_GRADLE"
+            sed -i '/android\s*{/a\    namespace "one.telefon.sip2"\n    ndkVersion "26.1.10909125"' "$SIP2_BUILD_GRADLE"
             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$SIP2_BUILD_GRADLE"
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$SIP2_BUILD_GRADLE"
-            sed -i 's/minSdkVersion 16/minSdkVersion 24/' "$SIP2_BUILD_GRADLE"
-            sed -i 's/minSdkVersion 21/minSdkVersion 24/' "$SIP2_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$SIP2_BUILD_GRADLE"
             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$SIP2_BUILD_GRADLE"
-            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$SIP2_BUILD_GRADLE"
+            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native:ReactAndroid')|" "$SIP2_BUILD_GRADLE"
             echo "Patched react-native-sip2 build.gradle"
           fi
-          
+
           # Patch react-native-tele
           TELE_BUILD_GRADLE="node_modules/react-native-tele/android/app/build.gradle"
           if [ -f "$TELE_BUILD_GRADLE" ]; then
-            sed -i '/classpath.*com\.android\.tools\.build:gradle/d' "$TELE_BUILD_GRADLE"
-            sed -i '/classpath.*gradle.*2\./d' "$TELE_BUILD_GRADLE"
-            sed -i '/android\s*{/a\    namespace "one.telefon.tele"' "$TELE_BUILD_GRADLE"
+            sed -i '/android\s*{/a\    namespace "one.telefon.tele"\n    ndkVersion "26.1.10909125"' "$TELE_BUILD_GRADLE"
             sed -i 's/compileSdkVersion 28/compileSdkVersion 34/' "$TELE_BUILD_GRADLE"
             sed -i 's/buildToolsVersion "23.0.1"/buildToolsVersion "34.0.0"/' "$TELE_BUILD_GRADLE"
-            sed -i 's/minSdkVersion 16/minSdkVersion 24/' "$TELE_BUILD_GRADLE"
-            sed -i 's/minSdkVersion 21/minSdkVersion 24/' "$TELE_BUILD_GRADLE"
+            sed -i 's/minSdkVersion 16/minSdkVersion 21/' "$TELE_BUILD_GRADLE"
             sed -i 's/targetSdkVersion 28/targetSdkVersion 34/' "$TELE_BUILD_GRADLE"
-            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native')|" "$TELE_BUILD_GRADLE"
+            sed -i "s|implementation 'com.facebook.react:react-native:+'|implementation project(':react-native:ReactAndroid')|" "$TELE_BUILD_GRADLE"
             echo "Patched react-native-tele build.gradle"
           fi
         working-directory: telon-gateway-app
@@ -206,9 +123,6 @@ jobs:
           SIP2_MANIFEST="node_modules/react-native-sip2/android/src/main/AndroidManifest.xml"
           if [ -f "$SIP2_MANIFEST" ]; then
             sed -i 's/package="one.telefon.sip2"//' "$SIP2_MANIFEST"
-            # Update minSdkVersion in uses-sdk if present (React Native 0.80 requires 24)
-            sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="24"/g' "$SIP2_MANIFEST"
-            sed -i 's/android:minSdkVersion="21"/android:minSdkVersion="24"/g' "$SIP2_MANIFEST"
             echo "Cleaned react-native-sip2 AndroidManifest.xml"
           fi
 
@@ -216,9 +130,6 @@ jobs:
           TELE_MANIFEST="node_modules/react-native-tele/android/app/src/main/AndroidManifest.xml"
           if [ -f "$TELE_MANIFEST" ]; then
             sed -i 's/package="one.telefon.tele"//' "$TELE_MANIFEST"
-            # Update minSdkVersion in uses-sdk if present (React Native 0.80 requires 24)
-            sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="24"/g' "$TELE_MANIFEST"
-            sed -i 's/android:minSdkVersion="21"/android:minSdkVersion="24"/g' "$TELE_MANIFEST"
             echo "Cleaned react-native-tele AndroidManifest.xml"
           fi
         working-directory: telon-gateway-app
@@ -240,6 +151,16 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
+      - name: Build Android Release AAB (optional)
+        run: |
+          cd android
+          ./gradlew bundleRelease
+        working-directory: telon-gateway-app
+        continue-on-error: true  # Don't fail if AAB build fails
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -247,3 +168,11 @@ jobs:
           path: telon-gateway-app/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
+      - name: Upload AAB Artifact (if available)
+        uses: actions/upload-artifact@v4
+        if: success() || failure()  # Upload even if previous step failed
+        with:
+          name: android-aab
+          path: telon-gateway-app/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+          if-no-files-found: ignore
