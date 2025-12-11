@@ -36,16 +36,25 @@ allprojects {
     }
 }
 
-// Fix for React Native 0.80+ codegen task dependency issue
-// Gradle detects that :packages:react-native:ReactAndroid:buildCodegenCLI uses the output
-// of :react-native:buildCodegenCLI but there's no explicit dependency declared.
-// This configuration ensures the dependency is properly declared.
+// Fix for React Native 0.80+ codegen task dependency issues
+// Gradle detects that :packages:react-native:ReactAndroid tasks use outputs of :react-native tasks
+// but there's no explicit dependency declared. This configuration ensures the dependencies are properly declared.
 gradle.projectsEvaluated {
+    // Fix for buildCodegenCLI task dependency
     def reactNativeBuildCodegenCLI = project(':react-native').tasks.findByName('buildCodegenCLI')
     def reactAndroidBuildCodegenCLI = project(':packages:react-native:ReactAndroid').tasks.findByName('buildCodegenCLI')
     
     if (reactNativeBuildCodegenCLI != null && reactAndroidBuildCodegenCLI != null) {
         reactAndroidBuildCodegenCLI.dependsOn(reactNativeBuildCodegenCLI)
         println("Configured :packages:react-native:ReactAndroid:buildCodegenCLI to depend on :react-native:buildCodegenCLI")
+    }
+    
+    // Fix for generateCodegenArtifactsFromSchema task dependency
+    def reactNativeGenerateSchema = project(':react-native').tasks.findByName('generateCodegenSchemaFromJavaScript')
+    def reactAndroidGenerateArtifacts = project(':packages:react-native:ReactAndroid').tasks.findByName('generateCodegenArtifactsFromSchema')
+    
+    if (reactNativeGenerateSchema != null && reactAndroidGenerateArtifacts != null) {
+        reactAndroidGenerateArtifacts.dependsOn(reactNativeGenerateSchema)
+        println("Configured :packages:react-native:ReactAndroid:generateCodegenArtifactsFromSchema to depend on :react-native:generateCodegenSchemaFromJavaScript")
     }
 }
