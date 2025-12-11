@@ -57,4 +57,13 @@ gradle.projectsEvaluated {
         reactAndroidGenerateArtifacts.dependsOn(reactNativeGenerateSchema)
         println("Configured :packages:react-native:ReactAndroid:generateCodegenArtifactsFromSchema to depend on :react-native:generateCodegenSchemaFromJavaScript")
     }
+    
+    // Fix for prepareBoost task dependency
+    def reactNativeDownloadBoost = project(':react-native').tasks.findByName('downloadBoost')
+    def reactAndroidPrepareBoost = project(':packages:react-native:ReactAndroid').tasks.findByName('prepareBoost')
+    
+    if (reactNativeDownloadBoost != null && reactAndroidPrepareBoost != null) {
+        reactAndroidPrepareBoost.dependsOn(reactNativeDownloadBoost)
+        println("Configured :packages:react-native:ReactAndroid:prepareBoost to depend on :react-native:downloadBoost")
+    }
 }
