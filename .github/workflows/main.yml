@@ -126,13 +126,26 @@ jobs:
             fi
           fi
           
-          # Also make scripts executable in ReactAndroid directory where Gradle runs from
+          # Create directory structure and copy script where Gradle expects it
+          # Gradle runs from node_modules/react-native/ReactAndroid and expects:
+          # android/node_modules/@react-native/codegen/scripts/oss/build.sh
           if [ -d "node_modules/react-native/ReactAndroid" ]; then
             cd node_modules/react-native/ReactAndroid
-            # Try to find and make codegen script executable relative to this directory
+            # Create android directory structure
+            mkdir -p android/node_modules/@react-native/codegen/scripts/oss
+            # The actual script should be at ../../@react-native/codegen/scripts/oss/build.sh
+            # relative to ReactAndroid directory
             if [ -f "../../@react-native/codegen/scripts/oss/build.sh" ]; then
               chmod +x "../../@react-native/codegen/scripts/oss/build.sh"
-              echo "Made codegen script executable from ReactAndroid directory"
+              cp "../../@react-native/codegen/scripts/oss/build.sh" android/node_modules/@react-native/codegen/scripts/oss/build.sh
+              chmod +x android/node_modules/@react-native/codegen/scripts/oss/build.sh
+              echo "Copied codegen script to expected location"
+              ls -la android/node_modules/@react-native/codegen/scripts/oss/build.sh
+            else
+              echo "Warning: Codegen script not found at ../../@react-native/codegen/scripts/oss/build.sh"
+              echo "Current directory: $(pwd)"
+              echo "Looking for script..."
+              find ../.. -name "build.sh" -path "*/codegen/*" 2>/dev/null | head -5
             fi
             cd ../../..
           fi
