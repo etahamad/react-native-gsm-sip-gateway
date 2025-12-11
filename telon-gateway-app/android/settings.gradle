@@ -6,6 +6,8 @@ pluginManagement {
     }
 }
 
+includeBuild("../node_modules/@react-native/gradle-plugin")
+
 dependencyResolutionManagement {
     versionCatalogs {
         libs {
