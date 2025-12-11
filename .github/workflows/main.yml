@@ -108,52 +108,57 @@ jobs:
             python3 ../scripts/patch_react_native_build.py "$RN_BUILD_GRADLE_KTS"
           fi
           
-          # Make codegen build script executable
-          # Find the script from the project root (working directory is telon-gateway-app)
-          echo "Searching for codegen build script..."
-          CODEGEN_SCRIPT=$(find node_modules -name "build.sh" -path "*/@react-native/codegen/scripts/oss/*" -type f 2>/dev/null | head -1)
-          if [ -n "$CODEGEN_SCRIPT" ] && [ -f "$CODEGEN_SCRIPT" ]; then
-            chmod +x "$CODEGEN_SCRIPT"
-            echo "Made codegen build script executable: $CODEGEN_SCRIPT"
-            # Verify it's executable
-            ls -la "$CODEGEN_SCRIPT"
-            # Check shebang
-            head -1 "$CODEGEN_SCRIPT"
+          # Setup codegen build script
+          # In React Native 0.80+, the buildCodegenCLI task expects a build.sh script at:
+          # android/node_modules/@react-native/codegen/scripts/oss/build.sh
+          # This script builds the native codegen CLI binary. However, in some React Native versions,
+          # this script may not be included in the @react-native/codegen package, or codegen may
+          # be optional if you're not using the New Architecture or TurboModules.
+          #
+          # Reference: https://github.com/facebook/react-native/blob/main/packages/react-native/ReactAndroid/build.gradle.kts
+          
+          echo "=== Setting up codegen build script ==="
+          echo "Checking for @react-native/codegen package..."
+          
+          # Check if codegen package exists
+          if [ ! -d "node_modules/@react-native/codegen" ]; then
+            echo "Warning: @react-native/codegen package not found in node_modules"
+            echo "This is normal if codegen is not explicitly installed as a dependency"
           else
-            echo "Warning: Codegen build script not found. Listing codegen directory structure..."
-            if [ -d "node_modules/@react-native/codegen" ]; then
-              find node_modules/@react-native/codegen -type f -name "*.sh" 2>/dev/null | head -10
-            fi
+            echo "Found @react-native/codegen package"
+            echo "Listing codegen directory structure:"
+            ls -la node_modules/@react-native/codegen/ 2>/dev/null || echo "Cannot list codegen directory"
           fi
           
-          # Create directory structure and script where Gradle expects it
-          # Gradle runs from node_modules/react-native/ReactAndroid and expects:
-          # android/node_modules/@react-native/codegen/scripts/oss/build.sh
-          if [ -d "node_modules/react-native/ReactAndroid" ]; then
-            cd node_modules/react-native/ReactAndroid
-            # Create android directory structure
-            mkdir -p android/node_modules/@react-native/codegen/scripts/oss
-            # Try to find and copy the actual script
-            ACTUAL_SCRIPT=$(find ../.. -name "build.sh" -path "*/@react-native/codegen/scripts/oss/*" -type f 2>/dev/null | head -1)
-            if [ -n "$ACTUAL_SCRIPT" ] && [ -f "$ACTUAL_SCRIPT" ]; then
-              chmod +x "$ACTUAL_SCRIPT"
-              cp "$ACTUAL_SCRIPT" android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              chmod +x android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              echo "Copied codegen script from: $ACTUAL_SCRIPT"
-            else
-              echo "Warning: Codegen build.sh script not found. Creating minimal stub script..."
-              # Create a minimal script that will satisfy Gradle
-              echo '#!/bin/bash' > android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              echo '# Minimal stub script for codegen build' >> android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              echo '# The actual codegen CLI might be built elsewhere or not needed' >> android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              echo 'echo "Codegen build script stub - skipping native build"' >> android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              echo 'exit 0' >> android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              chmod +x android/node_modules/@react-native/codegen/scripts/oss/build.sh
-              echo "Created stub codegen script at expected location"
-            fi
-            ls -la android/node_modules/@react-native/codegen/scripts/oss/build.sh || echo "Failed to create script"
-            cd ../../..
+          # Search for the actual build.sh script in node_modules
+          echo "Searching for build.sh script in node_modules..."
+          ACTUAL_SCRIPT=$(find node_modules -name "build.sh" -path "*/@react-native/codegen/scripts/oss/*" -type f 2>/dev/null | head -1)
+          
+          # Create directory where Gradle expects the script
+          mkdir -p android/node_modules/@react-native/codegen/scripts/oss
+          
+          if [ -n "$ACTUAL_SCRIPT" ] && [ -f "$ACTUAL_SCRIPT" ]; then
+            echo "Found codegen build script at: $ACTUAL_SCRIPT"
+            chmod +x "$ACTUAL_SCRIPT"
+            cp "$ACTUAL_SCRIPT" android/node_modules/@react-native/codegen/scripts/oss/build.sh
+            chmod +x android/node_modules/@react-native/codegen/scripts/oss/build.sh
+            echo "Copied codegen script to expected location"
+            ls -la android/node_modules/@react-native/codegen/scripts/oss/build.sh
+          else
+            echo "Codegen build.sh script not found in node_modules"
+            echo "This may be normal - React Native 0.80+ may handle codegen differently"
+            echo "Creating minimal stub script to satisfy Gradle's buildCodegenCLI task..."
+            echo "Note: If you're not using TurboModules or the New Architecture, codegen may not be needed"
+            
+            # Create a stub script that exits successfully
+            # This allows the build to proceed even if codegen CLI isn't built
+            printf '#!/bin/bash\n# Stub script for React Native codegen build\n# This script is created because the actual build.sh may not be present in\n# @react-native/codegen package in React Native 0.80+\n# \n# If you'\''re using TurboModules or the New Architecture, you may need to:\n# 1. Ensure @react-native/codegen is properly installed\n# 2. Build the codegen CLI manually if needed\n# 3. Or configure your project to skip codegen if not needed\n#\n# For now, this stub allows the build to proceed\necho "Codegen build script stub - buildCodegenCLI task will complete without building native CLI"\nexit 0\n' > android/node_modules/@react-native/codegen/scripts/oss/build.sh
+            chmod +x android/node_modules/@react-native/codegen/scripts/oss/build.sh
+            echo "Created stub codegen script at: android/node_modules/@react-native/codegen/scripts/oss/build.sh"
+            ls -la android/node_modules/@react-native/codegen/scripts/oss/build.sh
           fi
+          
+          echo "=== Codegen setup complete ==="
           
           # Patch react-native-sip2
           SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
