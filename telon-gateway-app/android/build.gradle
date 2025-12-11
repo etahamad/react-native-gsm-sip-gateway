@@ -85,7 +85,7 @@ gradle.projectsEvaluated {
         println("Configured :packages:react-native:ReactAndroid:extractDeepLinksForAarRelease to depend on :react-native:generateReleaseResValues")
     }
     
-    // Generic fix: Automatically handle all download/prepare task pairs
+    // Generic fix: Automatically handle all download/prepare task pairs and resource-related tasks
     // This prevents similar issues with other dependencies (glog, gtest, etc.)
     def reactNativeProject = project(':react-native')
     def reactAndroidProject = project(':packages:react-native:ReactAndroid')
@@ -102,13 +102,17 @@ gradle.projectsEvaluated {
             }
         }
         
-        // Handle extractDeepLinks tasks that depend on generateResValues
-        if (task.name.contains('extractDeepLinks') && task.name.contains('Release')) {
-            def generateResValuesTask = reactNativeProject.tasks.findByName('generateReleaseResValues')
-            if (generateResValuesTask != null && !task.dependsOn.contains(generateResValuesTask)) {
-                task.dependsOn(generateResValuesTask)
-                println("Auto-configured :packages:react-native:ReactAndroid:${task.name} to depend on :react-native:generateReleaseResValues")
-            }
+        // Handle all tasks that might depend on generateReleaseResValues
+        // This includes extractDeepLinks, packageResources, mergeResources, etc.
+        if (reactNativeGenerateResValues != null && 
+            (task.name.contains('extractDeepLinks') || 
+             task.name.contains('packageResources') || 
+             task.name.contains('mergeResources') ||
+             task.name.contains('processResources')) &&
+            task.name.contains('Release') &&
+            !task.dependsOn.contains(reactNativeGenerateResValues)) {
+            task.dependsOn(reactNativeGenerateResValues)
+            println("Auto-configured :packages:react-native:ReactAndroid:${task.name} to depend on :react-native:generateReleaseResValues")
         }
     }
 }
