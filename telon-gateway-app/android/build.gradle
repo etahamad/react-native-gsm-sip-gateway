@@ -85,6 +85,14 @@ gradle.projectsEvaluated {
         println("Configured :packages:react-native:ReactAndroid:extractDeepLinksForAarRelease to depend on :react-native:generateReleaseResValues")
     }
     
+    // Fix for packageReleaseResources task dependency
+    def reactAndroidPackageResources = project(':packages:react-native:ReactAndroid').tasks.findByName('packageReleaseResources')
+    
+    if (reactNativeGenerateResValues != null && reactAndroidPackageResources != null) {
+        reactAndroidPackageResources.dependsOn(reactNativeGenerateResValues)
+        println("Configured :packages:react-native:ReactAndroid:packageReleaseResources to depend on :react-native:generateReleaseResValues")
+    }
+    
     // Generic fix: Automatically handle all download/prepare task pairs and resource-related tasks
     // This prevents similar issues with other dependencies (glog, gtest, etc.)
     def reactNativeProject = project(':react-native')
