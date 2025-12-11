@@ -93,6 +93,15 @@ jobs:
 
       - name: Patch build.gradle files
         run: |
+          # Patch React Native's build.gradle.kts to remove version from plugin DSL
+          # This avoids conflict with classpath version
+          RN_BUILD_GRADLE_KTS="node_modules/react-native/ReactAndroid/build.gradle.kts"
+          if [ -f "$RN_BUILD_GRADLE_KTS" ]; then
+            # Remove version specification from plugin DSL to use classpath version
+            sed -i 's/id("com\.android\.library") version "[^"]*"/id("com.android.library")/' "$RN_BUILD_GRADLE_KTS"
+            echo "Patched React Native build.gradle.kts"
+          fi
+
           # Patch react-native-sip2
           SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
           if [ -f "$SIP2_BUILD_GRADLE" ]; then
