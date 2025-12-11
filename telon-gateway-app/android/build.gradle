@@ -66,4 +66,31 @@ gradle.projectsEvaluated {
         reactAndroidPrepareBoost.dependsOn(reactNativeDownloadBoost)
         println("Configured :packages:react-native:ReactAndroid:prepareBoost to depend on :react-native:downloadBoost")
     }
+    
+    // Fix for prepareDoubleConversion task dependency
+    def reactNativeDownloadDoubleConversion = project(':react-native').tasks.findByName('downloadDoubleConversion')
+    def reactAndroidPrepareDoubleConversion = project(':packages:react-native:ReactAndroid').tasks.findByName('prepareDoubleConversion')
+    
+    if (reactNativeDownloadDoubleConversion != null && reactAndroidPrepareDoubleConversion != null) {
+        reactAndroidPrepareDoubleConversion.dependsOn(reactNativeDownloadDoubleConversion)
+        println("Configured :packages:react-native:ReactAndroid:prepareDoubleConversion to depend on :react-native:downloadDoubleConversion")
+    }
+    
+    // Generic fix: Automatically handle all download/prepare task pairs
+    // This prevents similar issues with other dependencies (glog, gtest, etc.)
+    def reactNativeProject = project(':react-native')
+    def reactAndroidProject = project(':packages:react-native:ReactAndroid')
+    
+    reactAndroidProject.tasks.all { task ->
+        if (task.name.startsWith('prepare')) {
+            // Try to find corresponding download task in :react-native
+            def downloadTaskName = 'download' + task.name.substring(7) // Remove 'prepare' prefix
+            def downloadTask = reactNativeProject.tasks.findByName(downloadTaskName)
+            
+            if (downloadTask != null && !task.dependsOn.contains(downloadTask)) {
+                task.dependsOn(downloadTask)
+                println("Auto-configured :packages:react-native:ReactAndroid:${task.name} to depend on :react-native:${downloadTaskName}")
+            }
+        }
+    }
 }
