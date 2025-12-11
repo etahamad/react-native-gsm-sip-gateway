@@ -76,6 +76,15 @@ gradle.projectsEvaluated {
         println("Configured :packages:react-native:ReactAndroid:prepareDoubleConversion to depend on :react-native:downloadDoubleConversion")
     }
     
+    // Fix for extractDeepLinksForAarRelease task dependency
+    def reactNativeGenerateResValues = project(':react-native').tasks.findByName('generateReleaseResValues')
+    def reactAndroidExtractDeepLinks = project(':packages:react-native:ReactAndroid').tasks.findByName('extractDeepLinksForAarRelease')
+    
+    if (reactNativeGenerateResValues != null && reactAndroidExtractDeepLinks != null) {
+        reactAndroidExtractDeepLinks.dependsOn(reactNativeGenerateResValues)
+        println("Configured :packages:react-native:ReactAndroid:extractDeepLinksForAarRelease to depend on :react-native:generateReleaseResValues")
+    }
+    
     // Generic fix: Automatically handle all download/prepare task pairs
     // This prevents similar issues with other dependencies (glog, gtest, etc.)
     def reactNativeProject = project(':react-native')
@@ -90,6 +99,15 @@ gradle.projectsEvaluated {
             if (downloadTask != null && !task.dependsOn.contains(downloadTask)) {
                 task.dependsOn(downloadTask)
                 println("Auto-configured :packages:react-native:ReactAndroid:${task.name} to depend on :react-native:${downloadTaskName}")
+            }
+        }
+        
+        // Handle extractDeepLinks tasks that depend on generateResValues
+        if (task.name.contains('extractDeepLinks') && task.name.contains('Release')) {
+            def generateResValuesTask = reactNativeProject.tasks.findByName('generateReleaseResValues')
+            if (generateResValuesTask != null && !task.dependsOn.contains(generateResValuesTask)) {
+                task.dependsOn(generateResValuesTask)
+                println("Auto-configured :packages:react-native:ReactAndroid:${task.name} to depend on :react-native:generateReleaseResValues")
             }
         }
     }
