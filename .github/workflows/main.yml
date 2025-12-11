@@ -134,8 +134,12 @@ jobs:
           echo "Searching for build.sh script in node_modules..."
           ACTUAL_SCRIPT=$(find node_modules -name "build.sh" -path "*/@react-native/codegen/scripts/oss/*" -type f 2>/dev/null | head -1)
           
-          # Create directory where Gradle expects the script
+          # Create the complete directory structure where Gradle expects codegen output
+          # This directory is used by both :react-native:buildCodegenCLI and 
+          # :packages:react-native:ReactAndroid:buildCodegenCLI tasks
+          # Creating it beforehand helps avoid Gradle implicit dependency warnings
           mkdir -p android/node_modules/@react-native/codegen/scripts/oss
+          mkdir -p android/node_modules/@react-native/codegen/lib
           
           if [ -n "$ACTUAL_SCRIPT" ] && [ -f "$ACTUAL_SCRIPT" ]; then
             echo "Found codegen build script at: $ACTUAL_SCRIPT"
@@ -158,7 +162,12 @@ jobs:
             ls -la android/node_modules/@react-native/codegen/scripts/oss/build.sh
           fi
           
+          # Create a marker file to indicate the directory structure is ready
+          # This helps Gradle understand the directory exists before tasks run
+          touch android/node_modules/@react-native/codegen/.gradle-ready
+          
           echo "=== Codegen setup complete ==="
+          echo "Codegen directory structure created at: android/node_modules/@react-native/codegen"
           
           # Patch react-native-sip2
           SIP2_BUILD_GRADLE="node_modules/react-native-sip2/android/build.gradle"
