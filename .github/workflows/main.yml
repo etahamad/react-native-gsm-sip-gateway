@@ -232,16 +232,6 @@ jobs:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
 
-      - name: Build Android Release AAB (optional)
-        run: |
-          cd android
-          ./gradlew bundleRelease
-        working-directory: telon-gateway-app
-        continue-on-error: true  # Don't fail if AAB build fails
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
-
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -249,11 +239,3 @@ jobs:
           path: telon-gateway-app/android/app/build/outputs/apk/release/*.apk
           retention-days: 30
 
-      - name: Upload AAB Artifact (if available)
-        uses: actions/upload-artifact@v4
-        if: success() || failure()  # Upload even if previous step failed
-        with:
-          name: android-aab
-          path: telon-gateway-app/android/app/build/outputs/bundle/release/*.aab
-          retention-days: 30
-          if-no-files-found: ignore
