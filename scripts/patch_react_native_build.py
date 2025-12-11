@@ -1,11 +1,107 @@
 #!/usr/bin/env python3
 """
-Patch React Native's build.gradle.kts to remove version and artifact from plugin DSL.
+Patch React Native's build.gradle.kts and libs.versions.toml to remove version and artifact from plugin DSL.
 This avoids conflict with classpath version when using both plugin DSL and apply plugin syntax.
 """
 import re
 import sys
 import os
+
+def patch_libs_versions_toml(file_path):
+    """Remove version and artifact from android.library plugin in libs.versions.toml."""
+    if not os.path.exists(file_path):
+        print(f"File not found: {file_path}")
+        return False
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        original = content
+        lines = content.split('\n')
+        
+        print(f"=== DEBUG: Patching libs.versions.toml ===")
+        print(f"Looking for android.library plugin definition...")
+        
+        # Find the [plugins] section and android.library entry
+        # Format in TOML is typically:
+        # [plugins]
+        # android-library = { id = "com.android.library", version = "8.9.2" }
+        # or
+        # android-library = { id = "com.android.library", version = "8.9.2", artifact = "com.android.tools.build:gradle:8.9.2" }
+        
+        modified_lines = []
+        in_plugins_section = False
+        changed = False
+        
+        for i, line in enumerate(lines):
+            original_line = line
+            
+            # Check if we're in the [plugins] section
+            if line.strip().startswith('[plugins]'):
+                in_plugins_section = True
+                print(f"Found [plugins] section at line {i+1}")
+            elif line.strip().startswith('[') and not line.strip().startswith('[plugins'):
+                in_plugins_section = False
+            
+            # If we're in plugins section and find android-library or android.library
+            if in_plugins_section and ('android-library' in line or 'android.library' in line or 'android-library' in line.lower()):
+                print(f"Found android library plugin definition at line {i+1}: {line.rstrip()}")
+                original_line = line
+                
+                # Remove version and artifact from the line
+                # TOML format examples:
+                # android-library = { id = "com.android.library", version = "8.9.2" }
+                # android-library = { id = "com.android.library", version = "8.9.2", artifact = "com.android.tools.build:gradle:8.9.2" }
+                # android-library = { id = "com.android.library", version.ref = "agp" }
+                
+                # Remove version = "..." (with quotes)
+                line = re.sub(r',\s*version\s*=\s*"[^"]*"', '', line)
+                line = re.sub(r'version\s*=\s*"[^"]*"\s*,?\s*', '', line)
+                # Remove artifact = "..." (with quotes)
+                line = re.sub(r',\s*artifact\s*=\s*"[^"]*"', '', line)
+                line = re.sub(r'artifact\s*=\s*"[^"]*"\s*,?\s*', '', line)
+                # Remove version.ref = "..." (version references)
+                line = re.sub(r',\s*version\.ref\s*=\s*"[^"]*"', '', line)
+                line = re.sub(r'version\.ref\s*=\s*"[^"]*"\s*,?\s*', '', line)
+                
+                # Clean up any double commas or trailing commas before closing brace
+                line = re.sub(r',\s*,', ',', line)  # Double commas
+                line = re.sub(r',\s*}', '}', line)  # Trailing comma before }
+                line = re.sub(r'{\s*,', '{', line)  # Comma right after {
+                
+                if line != original_line:
+                    print(f"  Before: {original_line.rstrip()}")
+                    print(f"  After:  {line.rstrip()}")
+                    changed = True
+            
+            modified_lines.append(line)
+        
+        if changed:
+            content = '\n'.join(modified_lines)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"\n=== SUCCESS: Patched {file_path} ===")
+            return True
+        else:
+            print("No changes made to libs.versions.toml")
+            # Show the plugins section for debugging
+            print("\nShowing [plugins] section:")
+            in_plugins = False
+            for i, line in enumerate(lines, 1):
+                if line.strip().startswith('[plugins]'):
+                    in_plugins = True
+                elif line.strip().startswith('[') and not line.strip().startswith('[plugins'):
+                    if in_plugins:
+                        break
+                if in_plugins:
+                    print(f"{i}: {line.rstrip()}")
+            return False
+    except Exception as e:
+        print(f"Error patching libs.versions.toml: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+        return False
 
 def patch_react_native_build_gradle(file_path):
     """Remove version and artifact specifications from React Native's plugin DSL."""
@@ -132,8 +228,34 @@ if __name__ == '__main__':
         print("Usage: python3 patch_react_native_build.py <path_to_build.gradle.kts>")
         sys.exit(1)
     
-    file_path = sys.argv[1]
+    build_gradle_kts = sys.argv[1]
+    
+    # First patch the build.gradle.kts (though it uses alias, so this might not be needed)
+    patch_react_native_build_gradle(build_gradle_kts)
+    
+    # More importantly, patch the libs.versions.toml file
+    # The build.gradle.kts is in node_modules/react-native/ReactAndroid/
+    # The libs.versions.toml is in node_modules/react-native/gradle/
+    build_dir = os.path.dirname(build_gradle_kts)
+    # Navigate from ReactAndroid to react-native root, then to gradle
+    react_native_root = os.path.dirname(os.path.dirname(build_dir))
+    libs_versions_toml = os.path.join(react_native_root, 'gradle', 'libs.versions.toml')
+    
+    print(f"\n=== Attempting to patch version catalog ===")
+    print(f"Looking for: {libs_versions_toml}")
+    
+    if os.path.exists(libs_versions_toml):
+        patch_libs_versions_toml(libs_versions_toml)
+    else:
+        print(f"libs.versions.toml not found at {libs_versions_toml}")
+        # Try alternative location
+        alt_path = os.path.join(os.path.dirname(build_dir), 'gradle', 'libs.versions.toml')
+        print(f"Trying alternative: {alt_path}")
+        if os.path.exists(alt_path):
+            patch_libs_versions_toml(alt_path)
+        else:
+            print("Could not find libs.versions.toml - version catalog may be defined elsewhere")
+    
     # Always return success - no changes needed is also OK
-    patch_react_native_build_gradle(file_path)
     sys.exit(0)
 
