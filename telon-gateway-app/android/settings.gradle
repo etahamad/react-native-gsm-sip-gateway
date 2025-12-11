@@ -1,3 +1,10 @@
+dependencyResolutionManagement {
+    versionCatalogs {
+        libs {
+            from(files("../node_modules/react-native/gradle/libs.versions.toml"))
+        }
+    }
+}
 rootProject.name = 'teleexample'
 include ':react-native-sip2'
 project(':react-native-sip2').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-sip2/android')
